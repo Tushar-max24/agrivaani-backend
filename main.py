@@ -1,49 +1,34 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Optional
 from datetime import datetime
-import requests
-from fastapi import Request
-
-# ================================
-# 🔗 HUGGING FACE ML SERVICE
-# ================================
-HF_BASE_URL = "https://tuss2418-agrivaani-ml.hf.space"
+from gradio_client import Client
 
 # ================================
 # APP INITIALIZATION
 # ================================
-app = FastAPI(title="AgriVaani Backend (Proxy Mode)")
+app = FastAPI(title="AgriVaani Backend")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost",
-        "http://localhost:3000",
-        "http://localhost:5000",
-        "http://127.0.0.1",
-        "https://agrivaani-backend-2.onrender.com",
-    ],
+    allow_origins=["*"],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-@app.options("/predict-crop", include_in_schema=False)
-async def options_predict_crop():
-    return Response(status_code=200)
+# ================================
+# HUGGING FACE CLIENT (ONE TIME)
+# ================================
+hf_client = Client("tuss2418/agrivaani-ml")
 
 # ================================
 # INPUT SCHEMAS
 # ================================
 class AutoCropInput(BaseModel):
-    # UI metadata (not used by ML)
     district: str
     season: str
-
-    # ML features
     nitrogen: float
     phosphorus: float
     potassium: float
@@ -65,11 +50,10 @@ class FertilizerInput(BaseModel):
 
 
 class YieldInput(BaseModel):
-    district: str
-    season: str
+    rainfall: float
+    fertilizer: float
+    temperature: float
     land_area: float
-    fertilizer_level: str
-
 
 
 class ChatRequest(BaseModel):
@@ -108,30 +92,24 @@ def root():
 
 
 # ================================
-# 🌾 CROP PREDICTION (HF PROXY)
+# 🌾 CROP PREDICTION
 # ================================
-@app.api_route("/predict-crop", methods=["POST", "OPTIONS"])
-def predict_crop(data: AutoCropInput | None = None):
-    if data is None:
-        # OPTIONS request
-        return Response(status_code=200)
-
-    r = requests.post(
-        f"{HF_BASE_URL}/run/predict_crop",
-        json={
-            "data": [
-                data.nitrogen,
-                data.phosphorus,
-                data.potassium,
-                data.temperature,
-                data.humidity,
-                data.ph,
-                data.rainfall
-            ]
-        }
-    )
-    result = r.json()
-    return {"recommended_crop": result["data"][0]}
+@app.post("/predict-crop")
+def predict_crop(data: AutoCropInput):
+    try:
+        result = hf_client.predict(
+            data.nitrogen,
+            data.phosphorus,
+            data.potassium,
+            data.temperature,
+            data.humidity,
+            data.ph,
+            data.rainfall,
+            fn_index=0
+        )
+        return {"recommended_crop": result}
+    except Exception as e:
+        raise HTTPException(500, f"Crop prediction failed: {e}")
 
 
 # ================================
@@ -140,27 +118,20 @@ def predict_crop(data: AutoCropInput | None = None):
 @app.post("/predict-fertilizer")
 def predict_fertilizer(data: FertilizerInput):
     try:
-        r = requests.post(
-    f"{HF_BASE_URL}/run/predict",
-    json={
-        "fn_index": 0,  # 👈 first function = predict_crop
-        "data": [
+        result = hf_client.predict(
+            data.temperature,
+            data.humidity,
+            data.moisture,
+            data.soil_type,
+            data.crop_type,
             data.nitrogen,
             data.phosphorus,
             data.potassium,
-            data.temperature,
-            data.humidity,
-            data.ph,
-            data.rainfall
-        ]
-    },
-    timeout=60
-)
-
-        result = r.json()
-        return {"fertilizer": result["data"][0]}
-    except Exception:
-        raise HTTPException(500, "Fertilizer service unavailable")
+            fn_index=1
+        )
+        return {"fertilizer": result}
+    except Exception as e:
+        raise HTTPException(500, f"Fertilizer prediction failed: {e}")
 
 
 # ================================
@@ -169,65 +140,34 @@ def predict_fertilizer(data: FertilizerInput):
 @app.post("/predict-yield")
 def predict_yield(data: YieldInput):
     try:
-        weather = get_district_weather(data.district)
-
-        fertilizer_map = {
-            "low": 50,
-            "medium": 100,
-            "high": 150
-        }
-
-        fertilizer = fertilizer_map.get(
-            data.fertilizer_level.lower(), 100
+        result = hf_client.predict(
+            data.rainfall,
+            data.fertilizer,
+            data.temperature,
+            data.land_area,
+            fn_index=2
         )
-
-        r = requests.post(
-            f"{HF_BASE_URL}/run/predict_yield",
-            json={
-                "data": [
-                    weather["rainfall"],
-                    fertilizer,
-                    weather["temperature"],
-                    data.land_area
-                ]
-            },
-            timeout=30
-        )
-        r.raise_for_status()
-        result = r.json()
-
         return {
-            "predicted_yield": result["data"][0],
+            "predicted_yield": round(float(result), 2),
             "unit": "quintals/hectare"
         }
-
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Yield prediction failed: {e}"
-        )
-
+        raise HTTPException(500, f"Yield prediction failed: {e}")
 
 
 # ================================
-# 🦠 DISEASE DETECTION (IMAGE)
+# 🦠 DISEASE DETECTION
 # ================================
 @app.post("/predict-disease")
 async def predict_disease(file: UploadFile = File(...)):
     try:
-        files = {
-            "files": (file.filename, file.file, file.content_type),
-            "data": (None, [])
-        }
-        r = requests.post(
-            f"{HF_BASE_URL}/run/predict_disease",
-            files=files,
-            timeout=60
+        result = hf_client.predict(
+            file.file,
+            fn_index=3
         )
-        result = r.json()
-        return {"disease": result["data"][0]}
-    except Exception:
-        raise HTTPException(500, "Disease detection service unavailable")
+        return {"disease": result}
+    except Exception as e:
+        raise HTTPException(500, f"Disease detection failed: {e}")
 
 
 # ================================
@@ -258,17 +198,11 @@ def news():
 # 🏪 MARKETPLACE
 # ================================
 from govt_market import get_cached_govt_data
-from models.marketplace import add_crop, get_all_crops
+from models.marketplace import add_crop
 
 @app.get("/marketplace")
 def get_marketplace(state: str, limit: int = 100):
     return get_cached_govt_data(state=state, limit=limit)
-
-
-@app.get("/marketplace/states")
-def get_available_states():
-    data = get_cached_govt_data()
-    return sorted({item.get("state", "").strip() for item in data if item.get("state")})
 
 
 @app.post("/marketplace/add")
@@ -323,5 +257,3 @@ def view_feedback():
 @app.get("/health")
 def health():
     return {"status": "ok"}
-
-

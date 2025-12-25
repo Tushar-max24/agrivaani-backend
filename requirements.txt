@@ -3,6 +3,6 @@ uvicorn
 python-multipart
 pydantic
 python-dotenv
-requests
 google-generativeai
 translate
+gradio_client
