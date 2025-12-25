@@ -19,7 +19,13 @@ app = FastAPI(title="AgriVaani Backend (Proxy Mode)")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost",
+        "http://localhost:3000",
+        "http://localhost:5000",
+        "http://127.0.0.1",
+        "https://agrivaani-backend-2.onrender.com",
+    ],
     allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
@@ -311,5 +317,5 @@ def health():
 
 
 @app.options("/{path:path}")
-async def options_handler(request: Request, path: str):
-    return JSONResponse(status_code=200, content="OK")
+async def options_handler(path: str):
+    return JSONResponse(status_code=200)
