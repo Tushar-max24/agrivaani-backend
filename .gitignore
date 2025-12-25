@@ -1,11 +1,20 @@
-# Ignore ML models
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual environments
+venv/
+venv_tf/
+
+# Environment files
+.env
+
+# Machine learning models (DO NOT deploy to Render)
 *.h5
+*.pkl
 *.pt
 *.onnx
 
-# Ignore virtual environment
-venv/
-__pycache__/
-
-# Ignore env files
-.env
+# IDE files
+.idea/
+.vscode/
