@@ -5,7 +5,8 @@ from typing import Optional
 from datetime import datetime
 from gradio_client import Client
 import pandas as pd
-
+import tempfile
+import traceback
 
 # ================================
 # APP INITIALIZATION
@@ -185,28 +186,31 @@ def predict_yield_api(req: YieldRequest):
 # ================================
 # 🦠 DISEASE DETECTION
 # ================================
-from fastapi import UploadFile, File, HTTPException
-import tempfile
-
 @app.post("/predict-disease")
 async def predict_disease(file: UploadFile = File(...)):
     try:
-        # 🔹 Save uploaded image temporarily
+        # Save uploaded image
         with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
             tmp.write(await file.read())
             tmp_path = tmp.name
 
-        # 🔹 Send FILE PATH to Hugging Face
+        # Call Hugging Face Space
         result = hf_client.predict(
             tmp_path,
-            fn_index=3
+            fn_index=3   # confirm this index
         )
 
-        return {"disease": result}
+        return {
+            "success": True,
+            "disease": result
+        }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Disease detection failed: {e}")
-
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=500,
+            detail="Disease model service unavailable. Please try again."
+        )
 
 # ================================
 # 🧠 CHATBOT
