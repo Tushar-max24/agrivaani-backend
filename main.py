@@ -185,16 +185,27 @@ def predict_yield_api(req: YieldRequest):
 # ================================
 # 🦠 DISEASE DETECTION
 # ================================
+from fastapi import UploadFile, File, HTTPException
+import tempfile
+
 @app.post("/predict-disease")
 async def predict_disease(file: UploadFile = File(...)):
     try:
+        # 🔹 Save uploaded image temporarily
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
+            tmp.write(await file.read())
+            tmp_path = tmp.name
+
+        # 🔹 Send FILE PATH to Hugging Face
         result = hf_client.predict(
-            file.file,
+            tmp_path,
             fn_index=3
         )
+
         return {"disease": result}
+
     except Exception as e:
-        raise HTTPException(500, f"Disease detection failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Disease detection failed: {e}")
 
 
 # ================================
