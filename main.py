@@ -124,11 +124,18 @@ def predict_crop(data: AutoCropInput):
             data.humidity,
             data.ph,
             data.rainfall,
-            fn_index=0
+            api_name="/predict_crop"   # ✅ FIXED
         )
-        return {"recommended_crop": result}
+
+        return {
+            "recommended_crop": str(result)
+        }
+
     except Exception as e:
-        raise HTTPException(500, f"Crop prediction failed: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Crop prediction failed: {e}"
+        )
 
 
 # ================================
@@ -148,16 +155,19 @@ def predict_fertilizer(data: FertilizerRequest):
             n,
             p,
             k,
-            fn_index=1   # ⚠️ ensure this matches HF fertilizer function
+            api_name="/predict_fertilizer"   # ✅ FIXED
         )
 
         return {
-            "recommended_fertilizer": result,
+            "recommended_fertilizer": str(result),
             "note": "Apply as per local agriculture guidelines"
         }
 
     except Exception as e:
-        raise HTTPException(500, f"Fertilizer prediction failed: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Fertilizer prediction failed: {e}"
+        )
 
 
 # ================================
@@ -171,7 +181,7 @@ def predict_yield_api(req: YieldRequest):
             req.fertilizer,
             req.temperature,
             req.land_area,
-            fn_index=2   # ⚠️ ensure yield is function index 2 in HF
+            api_name="/predict_yield"   # ✅ FIXED
         )
 
         return {
@@ -180,7 +190,10 @@ def predict_yield_api(req: YieldRequest):
         }
 
     except Exception as e:
-        raise HTTPException(500, f"Yield prediction failed: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Yield prediction failed: {e}"
+        )
 
 
 # ================================
