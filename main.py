@@ -48,6 +48,10 @@ allowed_origins = [
     "http://localhost:8080",
     "http://127.0.0.1:8000",
     "http://127.0.0.1:8080",
+    "https://agrivaani-backend-2.onrender.com",
+    "https://*.onrender.com",  # Allow all Render subdomains
+    "https://*.web.app",  # For Firebase Hosting
+    "https://*.firebaseapp.com",  # For Firebase Hosting
     "http://192.168.0.103:8000",  # Your local IP
     "http://192.168.0.103",       # Your local IP without port
     "http://192.168.56.1:8000",
@@ -56,16 +60,15 @@ allowed_origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    # allow_origins=allowed_origins,
-    allow_credentials=False,
+    allow_origins=["*"],  # For now, allow all origins
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"],  # For file downloads
+    expose_headers=["*"]
 )
 
 # --------------------------------------------------
-# 🔥 LAZY LOADED MODELS (GLOBAL CACHE)
+# LAZY LOADED MODELS (GLOBAL CACHE)
 # --------------------------------------------------
 crop_model = None
 yield_model = None
