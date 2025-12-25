@@ -2,10 +2,7 @@ fastapi
 uvicorn
 python-multipart
 numpy
-pandas
-Pillow
 pydantic
-scikit-learn
 python-dotenv
 requests
 google-generativeai
