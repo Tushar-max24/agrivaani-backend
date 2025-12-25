@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from typing import List, Optional
 from datetime import datetime
 import requests
-
+from fastapi import Request
 
 # ================================
 # 🔗 HUGGING FACE ML SERVICE
@@ -21,7 +21,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=False,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -308,3 +308,8 @@ def view_feedback():
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.options("/{path:path}")
+async def options_handler(request: Request, path: str):
+    return JSONResponse(status_code=200, content="OK")
