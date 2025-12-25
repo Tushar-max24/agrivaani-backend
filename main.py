@@ -28,13 +28,8 @@ app.add_middleware(
 # INPUT SCHEMAS
 # ================================
 class AutoCropInput(BaseModel):
-    nitrogen: float
-    phosphorus: float
-    potassium: float
-    temperature: float
-    humidity: float
-    ph: float
-    rainfall: float
+    district: str
+    season: str
 
 
 class FertilizerInput(BaseModel):
@@ -49,10 +44,11 @@ class FertilizerInput(BaseModel):
 
 
 class YieldInput(BaseModel):
-    rainfall: float
-    fertilizer: float
-    temperature: float
-    area: float
+    district: str
+    season: str
+    land_area: float
+    fertilizer_level: str
+
 
 
 class ChatRequest(BaseModel):
@@ -96,25 +92,42 @@ def root():
 @app.post("/predict-crop")
 def predict_crop(data: AutoCropInput):
     try:
+        # 1️⃣ Fetch soil & weather
+        soil = get_soil_values(data.district, data.season)
+        weather = get_district_weather(data.district)
+
+        # 2️⃣ Send to Hugging Face
         r = requests.post(
             f"{HF_BASE_URL}/run/predict_crop",
             json={
                 "data": [
-                    data.nitrogen,
-                    data.phosphorus,
-                    data.potassium,
-                    data.temperature,
-                    data.humidity,
-                    data.ph,
-                    data.rainfall
+                    soil["N"],
+                    soil["P"],
+                    soil["K"],
+                    weather["temperature"],
+                    weather["humidity"],
+                    soil["ph"],
+                    weather["rainfall"]
                 ]
             },
             timeout=30
         )
+        r.raise_for_status()
         result = r.json()
-        return {"recommended_crop": result["data"][0]}
-    except Exception:
-        raise HTTPException(500, "Crop prediction service unavailable")
+
+        return {
+            "district": data.district,
+            "season": data.season,
+            "recommended_crop": result["data"][0],
+            "auto_filled": True
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Crop prediction failed: {e}"
+        )
+
 
 
 # ================================
@@ -151,22 +164,44 @@ def predict_fertilizer(data: FertilizerInput):
 @app.post("/predict-yield")
 def predict_yield(data: YieldInput):
     try:
+        weather = get_district_weather(data.district)
+
+        fertilizer_map = {
+            "low": 50,
+            "medium": 100,
+            "high": 150
+        }
+
+        fertilizer = fertilizer_map.get(
+            data.fertilizer_level.lower(), 100
+        )
+
         r = requests.post(
             f"{HF_BASE_URL}/run/predict_yield",
             json={
                 "data": [
-                    data.rainfall,
-                    data.fertilizer,
-                    data.temperature,
-                    data.area
+                    weather["rainfall"],
+                    fertilizer,
+                    weather["temperature"],
+                    data.land_area
                 ]
             },
             timeout=30
         )
+        r.raise_for_status()
         result = r.json()
-        return {"predicted_yield": result["data"][0]}
-    except Exception:
-        raise HTTPException(500, "Yield prediction service unavailable")
+
+        return {
+            "predicted_yield": result["data"][0],
+            "unit": "quintals/hectare"
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Yield prediction failed: {e}"
+        )
+
 
 
 # ================================
