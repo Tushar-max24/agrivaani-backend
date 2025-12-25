@@ -10,6 +10,8 @@ from gradio_client import Client
 # ================================
 app = FastAPI(title="AgriVaani Backend")
 
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -22,6 +24,21 @@ app.add_middleware(
 # HUGGING FACE CLIENT (ONE TIME)
 # ================================
 hf_client = Client("tuss2418/agrivaani-ml")
+
+DEFAULT_TEMP = 30
+DEFAULT_HUMIDITY = 70
+DEFAULT_MOISTURE = 40
+
+
+def deficiency_to_npk(deficiency: str):
+    if deficiency == "Nitrogen":
+        return 10, 50, 50
+    elif deficiency == "Phosphorus":
+        return 50, 10, 50
+    elif deficiency == "Potassium":
+        return 50, 50, 10
+    else:
+        return 40, 40, 40
 
 # ================================
 # INPUT SCHEMAS
@@ -38,15 +55,10 @@ class AutoCropInput(BaseModel):
     rainfall: float
 
 
-class FertilizerInput(BaseModel):
-    temperature: float
-    humidity: float
-    moisture: float
-    soil_type: str
+class FertilizerRequest(BaseModel):
     crop_type: str
-    nitrogen: float
-    phosphorus: float
-    potassium: float
+    soil_type: str
+    nutrient_deficiency: str
 
 
 class YieldInput(BaseModel):
@@ -116,20 +128,27 @@ def predict_crop(data: AutoCropInput):
 # 🌱 FERTILIZER RECOMMENDATION
 # ================================
 @app.post("/predict-fertilizer")
-def predict_fertilizer(data: FertilizerInput):
+def predict_fertilizer(data: FertilizerRequest):
     try:
+        n, p, k = deficiency_to_npk(data.nutrient_deficiency)
+
         result = hf_client.predict(
-            data.temperature,
-            data.humidity,
-            data.moisture,
+            DEFAULT_TEMP,
+            DEFAULT_HUMIDITY,
+            DEFAULT_MOISTURE,
             data.soil_type,
             data.crop_type,
-            data.nitrogen,
-            data.phosphorus,
-            data.potassium,
-            fn_index=1
+            n,
+            p,
+            k,
+            fn_index=1   # ⚠️ ensure this matches HF fertilizer function
         )
-        return {"fertilizer": result}
+
+        return {
+            "recommended_fertilizer": result,
+            "note": "Apply as per local agriculture guidelines"
+        }
+
     except Exception as e:
         raise HTTPException(500, f"Fertilizer prediction failed: {e}")
 
