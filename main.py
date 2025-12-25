@@ -188,30 +188,28 @@ def predict_yield_api(req: YieldRequest):
 # ================================
 @app.post("/predict-disease")
 async def predict_disease(file: UploadFile = File(...)):
-    try:
-        # Save uploaded image
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
-            tmp.write(await file.read())
-            tmp_path = tmp.name
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
+        tmp.write(await file.read())
+        tmp_path = tmp.name
 
-        # Call Hugging Face Space
+    try:
         result = hf_client.predict(
             tmp_path,
-            fn_index=3   # confirm this index
+            fn_index=3
         )
-
-        return {
-            "success": True,
-            "disease": result
-        }
+        return {"disease": result}
 
     except Exception as e:
-        traceback.print_exc()
-        raise HTTPException(
-            status_code=500,
-            detail="Disease model service unavailable. Please try again."
-        )
+        error_text = traceback.format_exc()
+        print("❌ HF ERROR TRACEBACK:")
+        print(error_text)
+        return {
+            "error": "HF_CALL_FAILED",
+            "details": str(e),
+            "trace": error_text
+        }
 
+        
 # ================================
 # 🧠 CHATBOT
 # ================================
