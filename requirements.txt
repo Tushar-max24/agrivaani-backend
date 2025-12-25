@@ -9,3 +9,4 @@ scikit-learn
 python-dotenv
 requests
 google-generativeai
+translate
