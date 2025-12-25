@@ -38,6 +38,19 @@ def normalize_state_name(state: str) -> str:
     return normalized
 
 def fetch_govt_prices(state=None, limit=100):
+    if not DATA_GOV_API_KEY or DATA_GOV_API_KEY == "YOUR_DATA_GOV_API_KEY":
+        print("⚠️ DATA_GOV_API_KEY is not set or is using the default value")
+        # Return sample data for testing
+        return [{
+            "crop": "Potato",
+            "price": 1500,
+            "quantity": "100 kg",
+            "state": "Uttar Pradesh",
+            "district": "Agra",
+            "market": "Agra Mandi",
+            "source": "sample"
+        }]
+        
     url = f"https://api.data.gov.in/resource/{DATASET_ID}"
     params = {
         "api-key": DATA_GOV_API_KEY,
@@ -53,25 +66,55 @@ def fetch_govt_prices(state=None, limit=100):
 
     try:
         response = requests.get(url, params=params, timeout=10)
-        response.raise_for_status()  # Raise an exception for bad status codes
+        response.raise_for_status()
         data = response.json()
         records = data.get("records", [])
         print(f"📊 Found {len(records)} records")
-        if not records and state:
-            print(f"⚠️ No data found for state: {state}")
-            print(f"   API Response: {data}")
+        
+        if not records:
+            print(f"⚠️ No data found for state: {state if state else 'all states'}")
+            # Return sample data when no records found
+            return [{
+                "crop": "Rice",
+                "price": 2500,
+                "quantity": "1 Quintal",
+                "state": state or "Tamil Nadu",
+                "district": "Sample District",
+                "market": "Sample Market",
+                "source": "sample"
+            }]
         
         govt_prices = []
         for r in records:
-            govt_prices.append({
-                "crop": r.get("commodity"),
-                "price": int(r.get("modal_price", 0)),
+            try:
+                price = int(float(str(r.get("modal_price", "0").replace(',', '')) or 0))
+                if price <= 0:  # Skip invalid prices
+                    continue
+                    
+                govt_prices.append({
+                    "crop": r.get("commodity", "Unknown Crop").title(),
+                    "price": price,
+                    "quantity": "1 Quintal",
+                    "state": r.get("state", "").title(),
+                    "district": r.get("district", "").title(),
+                    "market": r.get("market", "").title(),
+                    "source": "govt"
+                })
+            except (ValueError, AttributeError) as e:
+                print(f"⚠️ Error processing record: {e}")
+                continue
+                
+        if not govt_prices:  # If all records were invalid
+            return [{
+                "crop": "Wheat",
+                "price": 2000,
                 "quantity": "1 Quintal",
-                "state": r.get("state"),
-                "district": r.get("district"),
-                "market": r.get("market"),
-                "source": "govt",
-            })
+                "state": state or "Punjab",
+                "district": "Sample District",
+                "market": "Sample Market",
+                "source": "sample"
+            }]
+            
         return govt_prices
         
     except requests.exceptions.RequestException as e:
@@ -79,7 +122,17 @@ def fetch_govt_prices(state=None, limit=100):
         if hasattr(e, 'response') and e.response is not None:
             print(f"   Status Code: {e.response.status_code}")
             print(f"   Response: {e.response.text}")
-        return []
+        
+        # Return sample data on error
+        return [{
+            "crop": "Tomato",
+            "price": 1500,
+            "quantity": "1 Quintal",
+            "state": state or "Karnataka",
+            "district": "Sample District",
+            "market": "Sample Market",
+            "source": "sample"
+        }]
 
 
 def get_cached_govt_data(state=None, limit=100):
