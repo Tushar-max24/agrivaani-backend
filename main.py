@@ -41,30 +41,15 @@ from utils.model_loader import (
 # --------------------------------------------------
 app = FastAPI(title="AgriVaani ML Backend")
 
-# Allowed origins for CORS
-allowed_origins = [
-    "http://localhost",  # For local development
-    "http://localhost:8000",
-    "http://localhost:8080",
-    "http://127.0.0.1:8000",
-    "http://127.0.0.1:8080",
-    "https://agrivaani-backend-2.onrender.com",
-    "https://*.onrender.com",  # Allow all Render subdomains
-    "https://*.web.app",  # For Firebase Hosting
-    "https://*.firebaseapp.com",  # For Firebase Hosting
-    "http://192.168.0.103:8000",  # Your local IP
-    "http://192.168.0.103",       # Your local IP without port
-    "http://192.168.56.1:8000",
-    "http://192.168.56.1", 
-]
-
+# CORS Configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # For now, allow all origins
+    allow_origins=["*"],  # Allow all origins
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-    expose_headers=["*"]
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"],  # Allow all headers
+    expose_headers=["*"],  # Expose all headers
+    max_age=600  # Cache preflight response for 10 minutes
 )
 
 # --------------------------------------------------
