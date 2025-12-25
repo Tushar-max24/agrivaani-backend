@@ -31,6 +31,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+@app.options("/predict-crop", include_in_schema=False)
+async def options_predict_crop():
+    return Response(status_code=200)
+    
 # ================================
 # INPUT SCHEMAS
 # ================================
