@@ -188,26 +188,41 @@ def predict_yield_api(req: YieldRequest):
 # ================================
 @app.post("/predict-disease")
 async def predict_disease(file: UploadFile = File(...)):
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
-        tmp.write(await file.read())
-        tmp_path = tmp.name
-
     try:
-        result = hf_client.predict(
-            tmp_path,
-            api_name="/predict_disease"   # ✅ ONLY api_name
-        )
+        # Read the uploaded file into memory
+        image_data = await file.read()
+        
+        # Create a temporary file with the image data
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as tmp:
+            tmp.write(image_data)
+            tmp_path = tmp.name
+        
+        try:
+            # Pass the image data directly to the HF client
+            result = hf_client.predict(
+                tmp_path,  # Pass the file path to the HF client
+                api_name="/predict_disease"
+            )
 
-        # Normalize output to string
-        if isinstance(result, list) and len(result) > 0:
-            disease = str(result[0])
-        else:
-            disease = str(result)
+            # Normalize output to string
+            if isinstance(result, list) and len(result) > 0:
+                disease = str(result[0])
+            else:
+                disease = str(result)
 
-        return {
-            "success": True,
-            "disease": disease
-        }
+            return {
+                "success": True,
+                "disease": disease
+            }
+            
+        finally:
+            # Clean up the temporary file
+            import os
+            try:
+                if os.path.exists(tmp_path):
+                    os.unlink(tmp_path)
+            except Exception as e:
+                print(f"⚠️ Error cleaning up temp file: {e}")
 
     except Exception as e:
         error_text = traceback.format_exc()
