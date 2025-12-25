@@ -28,8 +28,18 @@ app.add_middleware(
 # INPUT SCHEMAS
 # ================================
 class AutoCropInput(BaseModel):
+    # UI metadata (not used by ML)
     district: str
     season: str
+
+    # ML features
+    nitrogen: float
+    phosphorus: float
+    potassium: float
+    temperature: float
+    humidity: float
+    ph: float
+    rainfall: float
 
 
 class FertilizerInput(BaseModel):
@@ -91,43 +101,22 @@ def root():
 # ================================
 @app.post("/predict-crop")
 def predict_crop(data: AutoCropInput):
-    try:
-        # 1️⃣ Fetch soil & weather
-        soil = get_soil_values(data.district, data.season)
-        weather = get_district_weather(data.district)
-
-        # 2️⃣ Send to Hugging Face
-        r = requests.post(
-            f"{HF_BASE_URL}/run/predict_crop",
-            json={
-                "data": [
-                    soil["N"],
-                    soil["P"],
-                    soil["K"],
-                    weather["temperature"],
-                    weather["humidity"],
-                    soil["ph"],
-                    weather["rainfall"]
-                ]
-            },
-            timeout=30
-        )
-        r.raise_for_status()
-        result = r.json()
-
-        return {
-            "district": data.district,
-            "season": data.season,
-            "recommended_crop": result["data"][0],
-            "auto_filled": True
+    r = requests.post(
+        f"{HF_BASE_URL}/run/predict_crop",
+        json={
+            "data": [
+                data.nitrogen,
+                data.phosphorus,
+                data.potassium,
+                data.temperature,
+                data.humidity,
+                data.ph,
+                data.rainfall
+            ]
         }
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Crop prediction failed: {e}"
-        )
-
+    )
+    result = r.json()
+    return {"recommended_crop": result["data"][0]}
 
 
 # ================================
