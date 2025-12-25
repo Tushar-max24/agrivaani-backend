@@ -27,7 +27,7 @@ app.add_middleware(
         "https://agrivaani-backend-2.onrender.com",
     ],
     allow_credentials=False,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
@@ -316,6 +316,3 @@ def health():
     return {"status": "ok"}
 
 
-@app.options("/{path:path}")
-async def options_handler(path: str):
-    return JSONResponse(status_code=200)
