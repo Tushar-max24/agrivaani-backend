@@ -195,19 +195,31 @@ async def predict_disease(file: UploadFile = File(...)):
     try:
         result = hf_client.predict(
             tmp_path,
-            fn_index=0
+            api_name="/predict_disease"   # ✅ ONLY api_name
         )
-        return {"disease": result}
+
+        # Normalize output to string
+        if isinstance(result, list) and len(result) > 0:
+            disease = str(result[0])
+        else:
+            disease = str(result)
+
+        return {
+            "success": True,
+            "disease": disease
+        }
 
     except Exception as e:
         error_text = traceback.format_exc()
         print("❌ HF ERROR TRACEBACK:")
         print(error_text)
+
         return {
+            "success": False,
             "error": "HF_CALL_FAILED",
-            "details": str(e),
-            "trace": error_text
+            "details": str(e)
         }
+
 
 
 # ================================
