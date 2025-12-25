@@ -158,21 +158,17 @@ def predict_fertilizer(data: FertilizerRequest):
 # ================================
 @app.post("/predict-yield")
 def predict_yield_api(req: YieldRequest):
-    try:
-        prediction = predict_yield(
-            req.rainfall,
-            req.fertilizer,
-            req.temperature,
-            req.land_area
-        )
-        return {
-            "predicted_yield": prediction,
-            "unit": "tons/hectare"
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    data = pd.DataFrame(
+        [[req.rainfall, req.fertilizer, req.temperature, req.land_area]],
+        columns=["rainfall", "fertilizer", "temperature", "area"]
+    )
 
+    prediction = yield_model.predict(data)[0]
 
+    return {
+        "predicted_yield": round(float(prediction), 2),
+        "unit": "tons/acre"
+    }
 
 # ================================
 # 🦠 DISEASE DETECTION
