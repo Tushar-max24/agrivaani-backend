@@ -1,8 +1,10 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 # from pydantic import BaseModel
-from PIL import Image
-import numpy as np
+
+# from PIL import Image
+# import numpy as np
+
 import pickle
 import pandas as pd
 from services.weather_service import get_weather, get_district_weather
@@ -24,12 +26,14 @@ from models.records import add_record, get_all_records, get_records_by_module
 from datetime import datetime
 from typing import List, Optional
 
+from services.disease_cnn_service import predict_disease_api
+
 # ✅ Model loaders
 from utils.model_loader import (
     load_crop_model,
     load_fertilizer_model,
     load_yield_model,
-    load_disease_model
+    # load_disease_model
 )
 
 # --------------------------------------------------
@@ -65,7 +69,7 @@ app.add_middleware(
 # --------------------------------------------------
 crop_model = None
 yield_model = None
-disease_model = None
+# disease_model = None
 fertilizer_model = None
 crop_encoder = None
 soil_encoder = None
@@ -292,21 +296,32 @@ def predict_yield(data: dict):
 # --------------------------------------------------
 # 🦠 DISEASE DETECTION (CNN)
 # --------------------------------------------------
+# @app.post("/predict-disease")
+# async def predict_disease(file: UploadFile = File(...)):
+#     global disease_model
+#     if disease_model is None:
+#         disease_model = load_disease_model()
+
+#     image = Image.open(file.file).convert("RGB")
+#     image = image.resize((128, 128))
+#     image = np.array(image) / 255.0
+#     image = np.expand_dims(image, axis=0)
+
+#     prediction = disease_model.predict(image)
+#     class_index = np.argmax(prediction)
+
+#     return {"disease": CLASS_NAMES[class_index]}
+
 @app.post("/predict-disease")
 async def predict_disease(file: UploadFile = File(...)):
-    global disease_model
-    if disease_model is None:
-        disease_model = load_disease_model()
-
-    image = Image.open(file.file).convert("RGB")
-    image = image.resize((128, 128))
-    image = np.array(image) / 255.0
-    image = np.expand_dims(image, axis=0)
-
-    prediction = disease_model.predict(image)
-    class_index = np.argmax(prediction)
-
-    return {"disease": CLASS_NAMES[class_index]}
+    try:
+        result = predict_disease_api(file.file)
+        return result
+    except Exception as e:
+        return JSONResponse(
+            status_code=500,
+            content={"error": "Disease prediction service unavailable"}
+        )
 
 # --------------------------------------------------
 # 🦠 Weather
@@ -466,3 +481,8 @@ def get_all_feedback():
     Returns all feedback entries in the system
     """
     return get_feedback()
+
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}

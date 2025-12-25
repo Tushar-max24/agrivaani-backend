@@ -1,5 +1,5 @@
 import pickle
-import tensorflow as tf
+# import tensorflow as tf
 
 
 # ---------------- Crop Model ----------------
@@ -29,4 +29,5 @@ def load_yield_model():
 
 
 def load_disease_model():
-    return tf.keras.models.load_model("models/disease_model.h5")
+    return None
+    # return tf.keras.models.load_model("models/disease_model.h5")
