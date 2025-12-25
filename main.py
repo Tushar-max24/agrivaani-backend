@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
-from gradio_client import Client
+from gradio_client import Client, handle_file
 import pandas as pd
 import tempfile
 import traceback
@@ -200,7 +200,7 @@ async def predict_disease(file: UploadFile = File(...)):
         try:
             # Pass the image data directly to the HF client
             result = hf_client.predict(
-                tmp_path,  # Pass the file path to the HF client
+                handle_file(tmp_path),  
                 api_name="/predict_disease"
             )
 
