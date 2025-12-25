@@ -133,7 +133,7 @@ def predict_crop(data: AutoCropInput | None = None):
     result = r.json()
     return {"recommended_crop": result["data"][0]}
 
-    
+
 # ================================
 # 🌱 FERTILIZER RECOMMENDATION
 # ================================
@@ -141,21 +141,22 @@ def predict_crop(data: AutoCropInput | None = None):
 def predict_fertilizer(data: FertilizerInput):
     try:
         r = requests.post(
-            f"{HF_BASE_URL}/run/predict_fertilizer",
-            json={
-                "data": [
-                    data.temperature,
-                    data.humidity,
-                    data.moisture,
-                    data.soil_type,
-                    data.crop_type,
-                    data.nitrogen,
-                    data.phosphorus,
-                    data.potassium
-                ]
-            },
-            timeout=30
-        )
+    f"{HF_BASE_URL}/run/predict",
+    json={
+        "fn_index": 0,  # 👈 first function = predict_crop
+        "data": [
+            data.nitrogen,
+            data.phosphorus,
+            data.potassium,
+            data.temperature,
+            data.humidity,
+            data.ph,
+            data.rainfall
+        ]
+    },
+    timeout=60
+)
+
         result = r.json()
         return {"fertilizer": result["data"][0]}
     except Exception:
