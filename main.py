@@ -4,6 +4,8 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 from gradio_client import Client
+import pandas as pd
+import pickle
 
 # ================================
 # APP INITIALIZATION
@@ -24,6 +26,17 @@ app.add_middleware(
 # HUGGING FACE CLIENT (ONE TIME)
 # ================================
 hf_client = Client("tuss2418/agrivaani-ml")
+
+
+# ================================
+# LOAD SIMPLE YIELD MODEL
+# ================================
+print("📦 Loading yield model...")
+
+yield_model = pickle.load(open("models/yield_model.pkl", "rb"))
+
+print("✅ Yield model loaded successfully")
+
 
 DEFAULT_TEMP = 30
 DEFAULT_HUMIDITY = 70
@@ -158,17 +171,29 @@ def predict_fertilizer(data: FertilizerRequest):
 # ================================
 @app.post("/predict-yield")
 def predict_yield_api(req: YieldRequest):
-    data = pd.DataFrame(
-        [[req.rainfall, req.fertilizer, req.temperature, req.land_area]],
-        columns=["rainfall", "fertilizer", "temperature", "area"]
-    )
+    try:
+        print("📥 Incoming payload:", req)
 
-    prediction = yield_model.predict(data)[0]
+        data = pd.DataFrame(
+            [[req.rainfall, req.fertilizer, req.temperature, req.land_area]],
+            columns=["rainfall", "fertilizer", "temperature", "area"]
+        )
 
-    return {
-        "predicted_yield": round(float(prediction), 2),
-        "unit": "tons/acre"
-    }
+        print("📊 DataFrame:", data)
+
+        prediction = yield_model.predict(data)
+
+        print("📈 Raw prediction:", prediction)
+
+        return {
+            "predicted_yield": round(float(prediction[0]), 2),
+            "unit": "tons/acre"
+        }
+
+    except Exception as e:
+        print("❌ YIELD ERROR:", repr(e))
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 # ================================
 # 🦠 DISEASE DETECTION
