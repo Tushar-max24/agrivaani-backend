@@ -34,7 +34,7 @@ app.add_middleware(
 @app.options("/predict-crop", include_in_schema=False)
 async def options_predict_crop():
     return Response(status_code=200)
-    
+
 # ================================
 # INPUT SCHEMAS
 # ================================
@@ -110,8 +110,12 @@ def root():
 # ================================
 # 🌾 CROP PREDICTION (HF PROXY)
 # ================================
-@app.post("/predict-crop")
-def predict_crop(data: AutoCropInput):
+@app.api_route("/predict-crop", methods=["POST", "OPTIONS"])
+def predict_crop(data: AutoCropInput | None = None):
+    if data is None:
+        # OPTIONS request
+        return Response(status_code=200)
+
     r = requests.post(
         f"{HF_BASE_URL}/run/predict_crop",
         json={
@@ -129,7 +133,7 @@ def predict_crop(data: AutoCropInput):
     result = r.json()
     return {"recommended_crop": result["data"][0]}
 
-
+    
 # ================================
 # 🌱 FERTILIZER RECOMMENDATION
 # ================================
