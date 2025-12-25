@@ -166,10 +166,18 @@ def predict_yield(data: YieldInput):
             data.land_area,
             fn_index=2
         )
+
+        # ✅ HANDLE LIST OR VALUE
+        if isinstance(result, list):
+            result = result[0]
+
+        result = float(result)
+
         return {
-            "predicted_yield": round(float(result), 2),
+            "predicted_yield": round(result, 2),
             "unit": "quintals/hectare"
         }
+
     except Exception as e:
         raise HTTPException(500, f"Yield prediction failed: {e}")
 
