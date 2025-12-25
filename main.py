@@ -61,7 +61,7 @@ class FertilizerRequest(BaseModel):
     nutrient_deficiency: str
 
 
-class YieldInput(BaseModel):
+class YieldRequest(BaseModel):
     rainfall: float
     fertilizer: float
     temperature: float
@@ -157,29 +157,21 @@ def predict_fertilizer(data: FertilizerRequest):
 # 🌾 YIELD PREDICTION
 # ================================
 @app.post("/predict-yield")
-def predict_yield(data: YieldInput):
+def predict_yield_api(req: YieldRequest):
     try:
-        result = hf_client.predict(
-            data.rainfall,
-            data.fertilizer,
-            data.temperature,
-            data.land_area,
-            fn_index=2
+        prediction = predict_yield(
+            req.rainfall,
+            req.fertilizer,
+            req.temperature,
+            req.land_area
         )
-
-        # ✅ HANDLE LIST OR VALUE
-        if isinstance(result, list):
-            result = result[0]
-
-        result = float(result)
-
         return {
-            "predicted_yield": round(result, 2),
-            "unit": "quintals/hectare"
+            "predicted_yield": prediction,
+            "unit": "tons/hectare"
         }
-
     except Exception as e:
-        raise HTTPException(500, f"Yield prediction failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 
 # ================================
