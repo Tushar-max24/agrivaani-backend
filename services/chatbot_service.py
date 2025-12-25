@@ -1,9 +1,26 @@
 # -*- coding: utf-8 -*-
 import os
-from google import genai
+# from google import genai
+import google.generativeai as genai
 from services.chatbot_state import chat_sessions
 from dotenv import load_dotenv
 from translate import Translator
+
+# ---------------------------------
+# 🔑 LOAD ENV VARIABLES
+# ---------------------------------
+load_dotenv()   # Loads .env file variables
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+if not GEMINI_API_KEY:
+    raise ValueError("❌ GEMINI_API_KEY not set in .env file")
+
+# ---------------------------------
+# 🤖 GEMINI CLIENT
+# ---------------------------------
+client = genai.Client(api_key=GEMINI_API_KEY)
+MODEL_NAME = "models/gemini-flash-latest"
+
 def translate(text: str, target_lang: str = "en") -> str:
     """
     Translate text to the target language using the translate package.
@@ -38,20 +55,7 @@ def translate(text: str, target_lang: str = "en") -> str:
         print(f"Translation error: {e}")
         return text  # Return original text if translation fails
 
-# ---------------------------------
-# 🔑 LOAD ENV VARIABLES
-# ---------------------------------
-load_dotenv()   # Loads .env file variables
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-if not GEMINI_API_KEY:
-    raise ValueError("❌ GEMINI_API_KEY not set in .env file")
-
-# ---------------------------------
-# 🤖 GEMINI CLIENT
-# ---------------------------------
-client = genai.Client(api_key=GEMINI_API_KEY)
-MODEL_NAME = "models/gemini-flash-latest"
 
 # ---------------------------------
 # 🧠 SLOT DEFINITIONS
