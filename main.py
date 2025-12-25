@@ -195,7 +195,7 @@ async def predict_disease(file: UploadFile = File(...)):
     try:
         result = hf_client.predict(
             tmp_path,
-            fn_index=3
+            fn_index=0
         )
         return {"disease": result}
 
@@ -209,7 +209,7 @@ async def predict_disease(file: UploadFile = File(...)):
             "trace": error_text
         }
 
-        
+
 # ================================
 # 🧠 CHATBOT
 # ================================
