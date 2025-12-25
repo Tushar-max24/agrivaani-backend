@@ -8,3 +8,4 @@ pydantic
 scikit-learn
 python-dotenv
 requests
+google-generativeai
