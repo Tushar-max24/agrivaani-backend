@@ -5,7 +5,7 @@ from typing import Optional
 from datetime import datetime
 from gradio_client import Client
 import pandas as pd
-import pickle
+
 
 # ================================
 # APP INITIALIZATION
@@ -28,14 +28,7 @@ app.add_middleware(
 hf_client = Client("tuss2418/agrivaani-ml")
 
 
-# ================================
-# LOAD SIMPLE YIELD MODEL
-# ================================
-print("📦 Loading yield model...")
 
-yield_model = pickle.load(open("models/yield_model.pkl", "rb"))
-
-print("✅ Yield model loaded successfully")
 
 
 DEFAULT_TEMP = 30
@@ -172,27 +165,21 @@ def predict_fertilizer(data: FertilizerRequest):
 @app.post("/predict-yield")
 def predict_yield_api(req: YieldRequest):
     try:
-        print("📥 Incoming payload:", req)
-
-        data = pd.DataFrame(
-            [[req.rainfall, req.fertilizer, req.temperature, req.land_area]],
-            columns=["rainfall", "fertilizer", "temperature", "area"]
+        result = hf_client.predict(
+            req.rainfall,
+            req.fertilizer,
+            req.temperature,
+            req.land_area,
+            fn_index=2   # ⚠️ ensure yield is function index 2 in HF
         )
 
-        print("📊 DataFrame:", data)
-
-        prediction = yield_model.predict(data)
-
-        print("📈 Raw prediction:", prediction)
-
         return {
-            "predicted_yield": round(float(prediction[0]), 2),
+            "predicted_yield": float(result),
             "unit": "tons/acre"
         }
 
     except Exception as e:
-        print("❌ YIELD ERROR:", repr(e))
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(500, f"Yield prediction failed: {e}")
 
 
 # ================================
