@@ -10,7 +10,7 @@ import traceback
 import json
 from services.chatbot_service import model
 from services.chatbot_service import handle_chatbot_message
-
+from services.weather_service import get_weather
 
 # ================================
 # APP INITIALIZATION
@@ -431,6 +431,26 @@ def submit_feedback(feedback: Feedback):
 def view_feedback():
     return get_feedback()
 
+
+@app.get("/weather/{city}")
+def weather_by_city(city: str):
+    try:
+        city = city.strip().lower()
+        data = get_weather(city)
+
+        if not data:
+            raise HTTPException(status_code=404, detail="City not found")
+
+        return data
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/weather")
+def weather(city: str):
+    city = city.strip().lower()
+    return get_weather(city)
 
 # ================================
 # ❤️ HEALTH

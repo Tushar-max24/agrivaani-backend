@@ -2,9 +2,12 @@ import requests
 import random
 from typing import Dict, Optional
 from services.weather_advisory_service import get_crop_advisory
+import os
 
 # OpenWeather API configuration
-API_KEY = "6750bbeb2d3c7f493c372606dcb70b9f"
+
+
+API_KEY = os.getenv("OPENWEATHER_API_KEY")
 BASE_URL = "https://api.openweathermap.org/data/2.5/weather"
 
 # Mock weather data for districts (fallback when API fails)
