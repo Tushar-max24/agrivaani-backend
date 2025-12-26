@@ -18,12 +18,7 @@ model = genai.GenerativeModel(
         "temperature": 0.6,
         "max_output_tokens": 400,
     },
-    safety_settings=[
-        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
-        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-        {"category": "HARM_CATEGORY_SEXUAL_CONTENT", "threshold": "BLOCK_NONE"},
-    ]
+    
 )
 
 def handle_chatbot_message(session_id: str, message: str, language: str = "en"):
