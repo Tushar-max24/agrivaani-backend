@@ -278,17 +278,20 @@ def news():
 # 🏪 MARKETPLACE
 # ================================
 from govt_market import get_cached_govt_data
-from models.marketplace import add_crop
+from models.marketplace import add_crop, get_all_crops
 
 @app.get("/marketplace")
 def get_marketplace(state: str, limit: int = 100):
     try:
-        data = get_cached_govt_data(state=state, limit=limit)
+        govt_data = get_cached_govt_data(state=state, limit=limit)
+        farmer_data = get_all_crops()
+
         return {
             "success": True,
-            "count": len(data),
-            "data": data
+            "count": len(govt_data) + len(farmer_data),
+            "data": govt_data + farmer_data
         }
+
     except Exception as e:
         print("❌ MARKETPLACE ROUTE ERROR:", e)
         raise HTTPException(status_code=500, detail="Marketplace service failed")
@@ -302,6 +305,7 @@ def add_marketplace_crop(crop: MarketCrop):
             "success": True,
             "message": "Crop listed successfully"
         }
+
     except Exception as e:
         print("❌ ADD CROP ERROR:", e)
         raise HTTPException(status_code=500, detail="Failed to add crop")
