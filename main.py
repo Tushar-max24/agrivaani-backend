@@ -127,6 +127,16 @@ def predict_crop(data: AutoCropInput):
             api_name="/predict_crop"   # ✅ FIXED
         )
 
+        # ✅ SAVE RECORD
+        add_record({
+            "module_name": "Crop Prediction",
+            "title": "Crop Recommended",
+            "data": {
+                "inputs": data.dict(),
+                "result": str(result)
+            }
+        })
+
         return {
             "recommended_crop": str(result)
         }
@@ -158,6 +168,17 @@ def predict_fertilizer(data: FertilizerRequest):
             api_name="/predict_fertilizer"   # ✅ FIXED
         )
 
+
+        add_record({
+            "module_name": "Fertilizer Recommendation",
+            "title": "Fertilizer Suggested",
+            "data": {
+                "crop": data.crop_type,
+                "soil": data.soil_type,
+                "fertilizer": str(result)
+            }
+        })
+
         return {
             "recommended_fertilizer": str(result),
             "note": "Apply as per local agriculture guidelines"
@@ -184,10 +205,20 @@ def predict_yield_api(req: YieldRequest):
             api_name="/predict_yield"   # ✅ FIXED
         )
 
+        add_record({
+            "module_name": "Yield Prediction",
+            "title": "Yield Predicted",
+            "data": {
+                "inputs": req.dict(),
+                "yield": float(result)
+            }
+        })
+
         return {
             "predicted_yield": float(result),
             "unit": "tons/acre"
         }
+        
 
     except Exception as e:
         raise HTTPException(
@@ -216,6 +247,16 @@ async def predict_disease(file: UploadFile = File(...)):
                 handle_file(tmp_path),  
                 api_name="/predict_disease"
             )
+
+            add_record({
+                "module_name": "Disease Detection",
+                "title": "Disease Detected",
+                "data": {
+                    "disease": disease
+                }
+            })
+
+            
 
             # Normalize output to string
             if isinstance(result, list) and len(result) > 0:
@@ -301,6 +342,13 @@ def get_marketplace(state: str, limit: int = 100):
 def add_marketplace_crop(crop: MarketCrop):
     try:
         add_crop(crop.dict())
+
+        add_record({
+            "module_name": "Marketplace",
+            "title": "Crop Listed for Sale",
+            "data": crop.dict()
+        })
+        
         return {
             "success": True,
             "message": "Crop listed successfully"
@@ -343,7 +391,18 @@ from models.feedback import add_feedback, get_feedback
 def submit_feedback(feedback: Feedback):
     data = feedback.dict()
     data["timestamp"] = datetime.now().isoformat()
-    return add_feedback(data)
+
+    # Save feedback
+    add_feedback(data)
+
+    # ✅ SAVE RECORD
+    add_record({
+        "module_name": "Feedback",
+        "title": "Feedback Submitted",
+        "data": data
+    })
+
+    return {"success": True}
 
 
 @app.get("/feedback")
