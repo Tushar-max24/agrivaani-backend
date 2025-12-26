@@ -432,3 +432,19 @@ def view_feedback():
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+
+@app.get("/health/gemini")
+def gemini_health():
+    try:
+        response = model.generate_content("Reply with only the word: OK")
+        return {
+            "status": "success",
+            "reply": response.text
+        }
+    except Exception as e:
+        return {
+            "status": "failed",
+            "error": str(e)
+        }
