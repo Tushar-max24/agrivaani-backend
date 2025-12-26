@@ -8,6 +8,9 @@ import pandas as pd
 import tempfile
 import traceback
 import json
+from services.chatbot_service import model
+from services.chatbot_service import handle_chatbot_message
+
 
 # ================================
 # APP INITIALIZATION
@@ -249,13 +252,7 @@ async def predict_disease(file: UploadFile = File(...)):
                 api_name="/predict_disease"
             )
 
-            add_record({
-                "module_name": "Disease Detection",
-                "title": "Disease Detected",
-                "data": {
-                    "disease": disease
-                }
-            })
+            
 
             
 
@@ -264,6 +261,15 @@ async def predict_disease(file: UploadFile = File(...)):
                 disease = str(result[0])
             else:
                 disease = str(result)
+
+
+            add_record({
+                "module_name": "Disease Detection",
+                "title": "Disease Detected",
+                "data": {
+                    "disease": disease
+                }
+            })
 
             return {
                 "success": True,
@@ -437,14 +443,10 @@ def health():
 
 @app.get("/health/gemini")
 def gemini_health():
-    try:
-        response = model.generate_content("Reply with only the word: OK")
-        return {
-            "status": "success",
-            "reply": response.text
-        }
-    except Exception as e:
-        return {
-            "status": "failed",
-            "error": str(e)
-        }
+    result = handle_chatbot_message(
+        session_id="health",
+        message="Reply with only the word OK",
+        language="en"
+    )
+    return {"status": "success", "reply": result["reply"]}
+

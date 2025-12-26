@@ -4,18 +4,12 @@ from dotenv import load_dotenv
 import google.generativeai as genai
 from services.chatbot_state import chat_sessions
 
-# -----------------------------
-# LOAD ENV
-# -----------------------------
 load_dotenv()
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 if not GEMINI_API_KEY:
     raise ValueError("❌ GEMINI_API_KEY not set")
 
-# -----------------------------
-# GEMINI CONFIG
-# -----------------------------
 genai.configure(api_key=GEMINI_API_KEY)
 
 model = genai.GenerativeModel(
@@ -23,19 +17,21 @@ model = genai.GenerativeModel(
     generation_config={
         "temperature": 0.6,
         "max_output_tokens": 400,
-    }
+    },
+    safety_settings=[
+        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+        {"category": "HARM_CATEGORY_SEXUAL_CONTENT", "threshold": "BLOCK_NONE"},
+    ]
 )
 
-# -----------------------------
-# CHAT HANDLER (SAFE)
-# -----------------------------
 def handle_chatbot_message(session_id: str, message: str, language: str = "en"):
     try:
         message = message.strip()
         if not message:
             return {"reply": "Please type a message.", "done": False}
 
-        # ✅ Language map (MOST IMPORTANT FIX)
         language_map = {
             "en": "English",
             "hi": "Hindi",
@@ -68,7 +64,7 @@ Rules:
 
         prompt = system_prompt.strip() + "\n\n"
 
-        for turn in history[-5:]:
+        for turn in history[-3:]:
             prompt += f"User: {turn['user']}\n"
             prompt += f"AI: {turn['ai']}\n"
 
@@ -80,13 +76,12 @@ Rules:
             raise ValueError("Empty response from Gemini")
 
         reply = response.text.strip()
-
         history.append({"user": message, "ai": reply})
 
         return {"reply": reply, "done": False}
 
     except Exception as e:
-        print("❌ CHATBOT ERROR:", str(e))
+        print("❌ CHATBOT ERROR:", e)
 
         fallback = {
             "en": "Sorry, I couldn't process that. Please try again.",
@@ -98,7 +93,4 @@ Rules:
             "pa": "ਮਾਫ਼ ਕਰਨਾ, ਇਸ ਸਮੇਂ ਜਵਾਬ ਨਹੀਂ ਦੇ ਸਕਦਾ।",
         }
 
-        return {
-            "reply": fallback.get(language, fallback["en"]),
-            "done": False
-        }
+        return {"reply": fallback.get(language, fallback["en"]), "done": False}
