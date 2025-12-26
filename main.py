@@ -282,13 +282,29 @@ from models.marketplace import add_crop
 
 @app.get("/marketplace")
 def get_marketplace(state: str, limit: int = 100):
-    return get_cached_govt_data(state=state, limit=limit)
+    try:
+        data = get_cached_govt_data(state=state, limit=limit)
+        return {
+            "success": True,
+            "count": len(data),
+            "data": data
+        }
+    except Exception as e:
+        print("❌ MARKETPLACE ROUTE ERROR:", e)
+        raise HTTPException(status_code=500, detail="Marketplace service failed")
 
 
 @app.post("/marketplace/add")
 def add_marketplace_crop(crop: MarketCrop):
-    add_crop(crop.dict())
-    return {"message": "Crop listed successfully"}
+    try:
+        add_crop(crop.dict())
+        return {
+            "success": True,
+            "message": "Crop listed successfully"
+        }
+    except Exception as e:
+        print("❌ ADD CROP ERROR:", e)
+        raise HTTPException(status_code=500, detail="Failed to add crop")
 
 
 # ================================
