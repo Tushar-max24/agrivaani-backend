@@ -1,12 +1,13 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, Dict, Any
 from datetime import datetime
 from gradio_client import Client, handle_file
 import pandas as pd
 import tempfile
 import traceback
+import json
 
 # ================================
 # APP INITIALIZATION
@@ -297,12 +298,27 @@ async def predict_disease(file: UploadFile = File(...)):
 from services.chatbot_service import handle_chatbot_message
 
 @app.post("/chatbot")
-def chatbot(req: ChatRequest):
-    return handle_chatbot_message(
-        session_id=req.session_id,
-        message=req.message,
-        language=req.language
-    )
+async def chatbot(req: ChatRequest) -> Response:
+    try:
+        response_data = handle_chatbot_message(
+            session_id=req.session_id,
+            message=req.message,
+            language=req.language
+        )
+        # Ensure proper JSON serialization with ensure_ascii=False for non-ASCII characters
+        json_str = json.dumps(response_data, ensure_ascii=False)
+        return Response(
+            content=json_str,
+            media_type="application/json; charset=utf-8"
+        )
+    except Exception as e:
+        error_msg = f"Error processing chat request: {str(e)}"
+        print(error_msg)
+        return Response(
+            content=json.dumps({"error": error_msg}, ensure_ascii=False),
+            status_code=500,
+            media_type="application/json; charset=utf-8"
+        )
 
 
 # ================================
