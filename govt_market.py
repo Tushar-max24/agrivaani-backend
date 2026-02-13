@@ -18,6 +18,11 @@ if not DATA_GOV_API_KEY:
 if not DATA_GOV_API_KEY:
     DATA_GOV_API_KEY = os.getenv("DATA_GOV_API_KEY")  # Alternative method
 
+# TEMPORARY: Use the correct API key for testing
+if not DATA_GOV_API_KEY or len(DATA_GOV_API_KEY) < 50:
+    print("⚠️ Using correct API key for testing")
+    DATA_GOV_API_KEY = "579b464db66ec23bdd00000170308f5c75174463478cb38987eeb92f"
+
 DATASET_ID = "9ef84268-d588-465a-a308-a864a43d0070"
 
 _cached_data = []
