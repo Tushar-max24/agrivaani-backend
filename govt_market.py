@@ -5,19 +5,7 @@ import os
 # ==============================
 # CONFIG
 # ==============================
-import os
-from dotenv import load_dotenv
-
-# Load environment variables from .env file (for local development)
-load_dotenv()
-
-# Try multiple ways to get the API key
-DATA_GOV_API_KEY = os.environ.get("DATA_GOV_API_KEY")
-if not DATA_GOV_API_KEY:
-    DATA_GOV_API_KEY = os.environ.get("DATA_GOV_API_KEY")  # Try again (sometimes helps on Render)
-if not DATA_GOV_API_KEY:
-    DATA_GOV_API_KEY = os.getenv("DATA_GOV_API_KEY")  # Alternative method
-
+DATA_GOV_API_KEY = os.environ.get("DATA_GOV_API_KEY")  # Render-safe
 DATASET_ID = "9ef84268-d588-465a-a308-a864a43d0070"
 
 _cached_data = []
@@ -79,11 +67,10 @@ def fetch_govt_prices(state=None, limit=100):
                 "source": "govt",
             })
 
-        print(f"✅ Successfully fetched {len(govt_prices)} government price records")
         return govt_prices
 
     except Exception as e:
-        print(f"❌ GOVT API ERROR: {e}")
+        print("❌ GOVT API ERROR:", e)
         return []
 
 # ==============================
@@ -106,11 +93,10 @@ def get_cached_govt_data(state=None, limit=100):
             _cached_data = data
             _last_fetch_time = now
         else:
-            print("⚠️ No data received from API, using fallback")
+            print("⚠️ Using fallback data")
 
     # Fallback dummy data
     if not _cached_data:
-        print("❌ No cached data available, returning fallback")
         return [
             {
                 "crop": "Rice",
