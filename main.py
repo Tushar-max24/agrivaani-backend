@@ -482,6 +482,41 @@ def gemini_health():
     return {"status": "success", "reply": result["reply"]}
 
 
+@app.get("/debug/govt-api")
+def debug_govt_api():
+    import os
+    import requests
+    
+    api_key = os.environ.get("DATA_GOV_API_KEY")
+    dataset_id = "9ef84268-d588-465a-a308-a864a43d0070"
+    url = f"https://api.data.gov.in/resource/{dataset_id}"
+    
+    params = {
+        "api-key": api_key,
+        "format": "json",
+        "limit": 5
+    }
+    
+    try:
+        response = requests.get(url, params=params, timeout=10)
+        
+        return {
+            "api_key_prefix": api_key[:8] + "..." if api_key else None,
+            "api_key_length": len(api_key) if api_key else 0,
+            "url": url,
+            "params": {"api-key": "***", "format": "json", "limit": 5},
+            "response_status": response.status_code,
+            "response_headers": dict(response.headers),
+            "response_body": response.text[:500] + "..." if len(response.text) > 500 else response.text
+        }
+    except Exception as e:
+        return {
+            "error": str(e),
+            "api_key_prefix": api_key[:8] + "..." if api_key else None,
+            "url": url
+        }
+
+
 @app.get("/debug/simple")
 def debug_simple():
     import os
