@@ -346,14 +346,25 @@ from models.marketplace import add_crop, get_all_crops
 @app.get("/marketplace")
 def get_marketplace(state: str, limit: int = 100):
     try:
+        # Debug info
+        import os
+        debug_info = {
+            "api_key_exists": bool(os.environ.get("DATA_GOV_API_KEY")),
+            "api_key_length": len(os.environ.get("DATA_GOV_API_KEY", "")),
+            "env_vars_count": len(os.environ)
+        }
+        
         govt_data = get_cached_govt_data(state=state, limit=limit)
         farmer_data = get_all_crops()
 
-        return {
+        response = {
             "success": True,
             "count": len(govt_data) + len(farmer_data),
-            "data": govt_data + farmer_data
+            "data": govt_data + farmer_data,
+            "debug": debug_info  # Temporary debug info
         }
+
+        return response
 
     except Exception as e:
         print("❌ MARKETPLACE ROUTE ERROR:", e)
