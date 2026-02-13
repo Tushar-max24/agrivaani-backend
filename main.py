@@ -346,25 +346,14 @@ from models.marketplace import add_crop, get_all_crops
 @app.get("/marketplace")
 def get_marketplace(state: str, limit: int = 100):
     try:
-        # Debug info
-        import os
-        debug_info = {
-            "api_key_exists": bool(os.environ.get("DATA_GOV_API_KEY")),
-            "api_key_length": len(os.environ.get("DATA_GOV_API_KEY", "")),
-            "env_vars_count": len(os.environ)
-        }
-        
         govt_data = get_cached_govt_data(state=state, limit=limit)
         farmer_data = get_all_crops()
 
-        response = {
+        return {
             "success": True,
             "count": len(govt_data) + len(farmer_data),
-            "data": govt_data + farmer_data,
-            "debug": debug_info  # Temporary debug info
+            "data": govt_data + farmer_data
         }
-
-        return response
 
     except Exception as e:
         print("❌ MARKETPLACE ROUTE ERROR:", e)
@@ -480,74 +469,4 @@ def gemini_health():
         language="en"
     )
     return {"status": "success", "reply": result["reply"]}
-
-
-@app.get("/debug/govt-api")
-def debug_govt_api():
-    import os
-    import requests
-    
-    api_key = os.environ.get("DATA_GOV_API_KEY")
-    dataset_id = "9ef84268-d588-465a-a308-a864a43d0070"
-    url = f"https://api.data.gov.in/resource/{dataset_id}"
-    
-    params = {
-        "api-key": api_key,
-        "format": "json",
-        "limit": 5
-    }
-    
-    try:
-        response = requests.get(url, params=params, timeout=10)
-        
-        return {
-            "api_key_prefix": api_key[:8] + "..." if api_key else None,
-            "api_key_length": len(api_key) if api_key else 0,
-            "url": url,
-            "params": {"api-key": "***", "format": "json", "limit": 5},
-            "response_status": response.status_code,
-            "response_headers": dict(response.headers),
-            "response_body": response.text[:500] + "..." if len(response.text) > 500 else response.text
-        }
-    except Exception as e:
-        return {
-            "error": str(e),
-            "api_key_prefix": api_key[:8] + "..." if api_key else None,
-            "url": url
-        }
-
-
-@app.get("/debug/simple")
-def debug_simple():
-    import os
-    return {
-        "has_api_key": bool(os.environ.get("DATA_GOV_API_KEY")),
-        "api_key_length": len(os.environ.get("DATA_GOV_API_KEY", "")),
-        "env_vars_count": len(os.environ)
-    }
-
-
-@app.get("/debug/api-key")
-def debug_api_key():
-    import os
-    from dotenv import load_dotenv
-    load_dotenv()
-    
-    # Check all possible ways to get the API key
-    api_key_methods = {
-        "os.environ.get": os.environ.get("DATA_GOV_API_KEY"),
-        "os.getenv": os.getenv("DATA_GOV_API_KEY"),
-        "direct_access": os.environ["DATA_GOV_API_KEY"] if "DATA_GOV_API_KEY" in os.environ else None
-    }
-    
-    # Check all environment variables that contain "API" or "KEY"
-    env_vars = {k: v[:8] + "..." if v and len(v) > 8 else v for k, v in os.environ.items() if "API" in k.upper() or "KEY" in k.upper()}
-    
-    return {
-        "api_key_methods": {k: bool(v) for k, v in api_key_methods.items()},
-        "api_key_length": len(os.environ.get("DATA_GOV_API_KEY", "")),
-        "api_key_prefix": os.environ.get("DATA_GOV_API_KEY", "")[:8] + "..." if os.environ.get("DATA_GOV_API_KEY") else None,
-        "relevant_env_vars": env_vars,
-        "total_env_vars": len(os.environ)
-    }
 
