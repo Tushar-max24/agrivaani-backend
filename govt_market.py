@@ -5,7 +5,19 @@ import os
 # ==============================
 # CONFIG
 # ==============================
-DATA_GOV_API_KEY = os.environ.get("DATA_GOV_API_KEY")  # Render-safe
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file (for local development)
+load_dotenv()
+
+# Try multiple ways to get the API key
+DATA_GOV_API_KEY = os.environ.get("DATA_GOV_API_KEY")
+if not DATA_GOV_API_KEY:
+    DATA_GOV_API_KEY = os.environ.get("DATA_GOV_API_KEY")  # Try again (sometimes helps on Render)
+if not DATA_GOV_API_KEY:
+    DATA_GOV_API_KEY = os.getenv("DATA_GOV_API_KEY")  # Alternative method
+
 DATASET_ID = "9ef84268-d588-465a-a308-a864a43d0070"
 
 _cached_data = []

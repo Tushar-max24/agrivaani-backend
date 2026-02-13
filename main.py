@@ -474,9 +474,24 @@ def gemini_health():
 @app.get("/debug/api-key")
 def debug_api_key():
     import os
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    # Check all possible ways to get the API key
+    api_key_methods = {
+        "os.environ.get": os.environ.get("DATA_GOV_API_KEY"),
+        "os.getenv": os.getenv("DATA_GOV_API_KEY"),
+        "direct_access": os.environ["DATA_GOV_API_KEY"] if "DATA_GOV_API_KEY" in os.environ else None
+    }
+    
+    # Check all environment variables that contain "API" or "KEY"
+    env_vars = {k: v[:8] + "..." if v and len(v) > 8 else v for k, v in os.environ.items() if "API" in k.upper() or "KEY" in k.upper()}
+    
     return {
-        "api_key_exists": bool(os.environ.get("DATA_GOV_API_KEY")),
+        "api_key_methods": {k: bool(v) for k, v in api_key_methods.items()},
         "api_key_length": len(os.environ.get("DATA_GOV_API_KEY", "")),
-        "api_key_prefix": os.environ.get("DATA_GOV_API_KEY", "")[:8] + "..." if os.environ.get("DATA_GOV_API_KEY") else None
+        "api_key_prefix": os.environ.get("DATA_GOV_API_KEY", "")[:8] + "..." if os.environ.get("DATA_GOV_API_KEY") else None,
+        "relevant_env_vars": env_vars,
+        "total_env_vars": len(os.environ)
     }
 
