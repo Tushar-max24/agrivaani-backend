@@ -471,6 +471,16 @@ def gemini_health():
     return {"status": "success", "reply": result["reply"]}
 
 
+@app.get("/debug/simple")
+def debug_simple():
+    import os
+    return {
+        "has_api_key": bool(os.environ.get("DATA_GOV_API_KEY")),
+        "api_key_length": len(os.environ.get("DATA_GOV_API_KEY", "")),
+        "env_vars_count": len(os.environ)
+    }
+
+
 @app.get("/debug/api-key")
 def debug_api_key():
     import os
