@@ -36,7 +36,10 @@ def fetch_govt_prices(state=None, limit=100):
         print("❌ DATA_GOV_API_KEY NOT SET")
         return []
 
+    print(f"🔑 API Key found: {DATA_GOV_API_KEY[:8]}... (length: {len(DATA_GOV_API_KEY)})")
+    
     url = f"https://api.data.gov.in/resource/{DATASET_ID}"
+    print(f"🌐 API URL: {url}")
 
     params = {
         "api-key": DATA_GOV_API_KEY,
@@ -47,13 +50,21 @@ def fetch_govt_prices(state=None, limit=100):
     if state:
         state = normalize_state_name(state)
         params["filters[state]"] = state
+        print(f"🗺️ State filter: {state}")
+
+    print(f"📋 Params: {params}")
 
     try:
         response = requests.get(url, params=params, timeout=10)
+        print(f"📞 Response status: {response.status_code}")
+        print(f"📞 Response headers: {dict(response.headers)}")
+        
         response.raise_for_status()
         data = response.json()
+        print(f"📊 Response data keys: {list(data.keys())}")
 
         records = data.get("records", [])
+        print(f"📝 Records found: {len(records)}")
 
         govt_prices = []
         for r in records:
@@ -67,10 +78,15 @@ def fetch_govt_prices(state=None, limit=100):
                 "source": "govt",
             })
 
+        print(f"✅ Successfully processed {len(govt_prices)} government price records")
         return govt_prices
 
+    except requests.exceptions.RequestException as e:
+        print(f"❌ REQUEST ERROR: {e}")
+        print(f"❌ Response content: {response.text if 'response' in locals() else 'No response'}")
+        return []
     except Exception as e:
-        print("❌ GOVT API ERROR:", e)
+        print(f"❌ GOVT API ERROR:", e)
         return []
 
 # ==============================
@@ -80,6 +96,7 @@ def get_cached_govt_data(state=None, limit=100):
     global _cached_data, _last_fetch_time
 
     now = datetime.now()
+    print(f"🔄 Cache check - Last fetch: {_last_fetch_time}, Current: {now}")
 
     # Refresh every 30 minutes OR if state filter applied
     if (
@@ -87,16 +104,19 @@ def get_cached_govt_data(state=None, limit=100):
         or (now - _last_fetch_time).seconds > 1800
         or state
     ):
+        print(f"🔄 Fetching fresh data (state={state})")
         data = fetch_govt_prices(state=state, limit=limit)
 
         if data:
+            print(f"✅ Fresh data received, updating cache")
             _cached_data = data
             _last_fetch_time = now
         else:
-            print("⚠️ Using fallback data")
+            print("⚠️ No data received from API, using fallback")
 
     # Fallback dummy data
     if not _cached_data:
+        print("❌ No cached data available, returning fallback")
         return [
             {
                 "crop": "Rice",
@@ -109,4 +129,5 @@ def get_cached_govt_data(state=None, limit=100):
             }
         ]
 
+    print(f"✅ Returning cached data ({len(_cached_data)} records)")
     return _cached_data
