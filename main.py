@@ -57,13 +57,13 @@ def deficiency_to_npk(deficiency: str):
 class AutoCropInput(BaseModel):
     district: str
     season: str
-    nitrogen: float
-    phosphorus: float
-    potassium: float
-    temperature: float
-    humidity: float
-    ph: float
-    rainfall: float
+    nitrogen: Optional[float] = 90
+    phosphorus: Optional[float] = 40
+    potassium: Optional[float] = 40
+    temperature: Optional[float] = 28
+    humidity: Optional[float] = 65
+    ph: Optional[float] = 6.5
+    rainfall: Optional[float] = 120
 
 
 class FertilizerRequest(BaseModel):
@@ -120,14 +120,23 @@ def root():
 @app.post("/predict-crop")
 def predict_crop(data: AutoCropInput):
     try:
+        # Use provided values or defaults
+        nitrogen = data.nitrogen if data.nitrogen is not None else 90
+        phosphorus = data.phosphorus if data.phosphorus is not None else 40
+        potassium = data.potassium if data.potassium is not None else 40
+        temperature = data.temperature if data.temperature is not None else 28
+        humidity = data.humidity if data.humidity is not None else 65
+        ph = data.ph if data.ph is not None else 6.5
+        rainfall = data.rainfall if data.rainfall is not None else 120
+        
         result = hf_client.predict(
-            data.nitrogen,
-            data.phosphorus,
-            data.potassium,
-            data.temperature,
-            data.humidity,
-            data.ph,
-            data.rainfall,
+            nitrogen,
+            phosphorus,
+            potassium,
+            temperature,
+            humidity,
+            ph,
+            rainfall,
             api_name="/predict_crop"   # ✅ FIXED
         )
 
